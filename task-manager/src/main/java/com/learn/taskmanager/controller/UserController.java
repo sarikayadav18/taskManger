@@ -2,6 +2,7 @@ package com.learn.taskmanager.controller;
 
 import com.learn.taskmanager.model.User;
 import com.learn.taskmanager.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,9 +20,8 @@ public class UserController {
 
     // Create a new user: POST http://localhost:8080/api/users
     @PostMapping
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
-        User savedUser = userService.registerUser(user);
-        return ResponseEntity.ok(savedUser);
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        return ResponseEntity.ok(userService.saveUser(user));
     }
 
     // Get all users: GET http://localhost:8080/api/users

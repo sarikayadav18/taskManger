@@ -2,24 +2,29 @@ package com.learn.taskmanager.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference; // <-- ADD THIS
 import jakarta.persistence.*;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "tasks")
 public class Task {
 
+    private String description;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank(message = "Task title is required")
     private String title;
 
-    private String description;
-
-    @Column(nullable = false)
+    @NotBlank(message = "Status is required")
+    @Pattern(regexp = "PENDING|IN_PROGRESS|COMPLETED", message = "Status must be PENDING, IN_PROGRESS, or COMPLETED")
     private String status;
 
+    @FutureOrPresent(message = "Due date cannot be in the past")
     private LocalDate dueDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,7 +33,9 @@ public class Task {
     private User user;
 
     // --- Constructors ---
-    public Task() {}
+    public Task(String description) {
+        this.description = description;
+    }
 
     public Task(String title, String description, String status, LocalDate dueDate, User user) {
         this.title = title;

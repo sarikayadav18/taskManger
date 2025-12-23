@@ -29,6 +29,21 @@ public class TaskController {
         return taskService.getAllTasksByUser(userId);
     }
 
+
+    @GetMapping("/search")
+    public List<Task> searchTasks(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String title) {
+
+        if (status != null) {
+            return taskService.getTasksByStatus(status);
+        } else if (title != null) {
+            return taskService.searchTasksByTitle(title);
+        }
+
+        return taskService.getAllTasks(); // Returns all if no params are sent
+    }
+
     // Update a task: PUT http://localhost:8080/api/tasks/5
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task taskDetails) {

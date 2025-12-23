@@ -12,6 +12,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // Find all tasks belonging to a specific user
     List<Task> findByUser(User user);
 
-    // Find tasks by status for a specific user (e.g., all "PENDING" tasks)
-    List<Task> findByUserAndStatus(User user, String status);
+    // 1. Filter by Status (Exact match)
+    List<Task> findByStatus(String status);
+
+    // 2. Search by Title (Partial match, case-insensitive)
+    List<Task> findByTitleContainingIgnoreCase(String title);
+
+
 }
