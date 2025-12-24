@@ -1,8 +1,10 @@
 package com.learn.taskmanager.controller;
 
+import com.learn.taskmanager.dto.TaskDTO;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.service.TaskService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,43 +19,36 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    // Create a task for a user: POST http://localhost:8080/api/tasks/user/1
-    @PostMapping("/user/{userId}")
-    public ResponseEntity<Task> createTask(@PathVariable Long userId, @RequestBody Task task) {
-        return ResponseEntity.ok(taskService.createTask(userId, task));
+    // CREATE: POST http://localhost:8080/api/tasks
+    @PostMapping
+    public ResponseEntity<Task> createTask(@RequestBody TaskDTO task, Authentication authentication) {
+        return ResponseEntity.ok(taskService.createTask(authentication.getName(), task));
     }
 
-    // Get all tasks for a user: GET http://localhost:8080/api/tasks/user/1
-    @GetMapping("/user/{userId}")
-    public List<Task> getTasksByUserId(@PathVariable Long userId) {
-        return taskService.getAllTasksByUser(userId);
+    // READ ALL: GET http://localhost:8080/api/tasks
+    @GetMapping
+    public ResponseEntity<List<Task>> getMyTasks(Authentication authentication) {
+        return ResponseEntity.ok(taskService.getAllTasksByUsername(authentication.getName()));
     }
 
-
-    @GetMapping("/search")
-    public List<Task> searchTasks(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String title) {
-
-        if (status != null) {
-            return taskService.getTasksByStatus(status);
-        } else if (title != null) {
-            return taskService.searchTasksByTitle(title);
-        }
-
-        return taskService.getAllTasks(); // Returns all if no params are sent
-    }
-
-    // Update a task: PUT http://localhost:8080/api/tasks/5
+    // UPDATE: PUT http://localhost:8080/api/tasks/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task taskDetails) {
-        return ResponseEntity.ok(taskService.updateTask(id, taskDetails));
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task taskDetails, Authentication authentication) {
+        return ResponseEntity.ok(taskService.updateTask(id, taskDetails, authentication.getName()));
     }
 
-    // Delete a task: DELETE http://localhost:8080/api/tasks/5
+    // DELETE: DELETE http://localhost:8080/api/tasks/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id);
+    public ResponseEntity<String> deleteTask(@PathVariable Long id, Authentication authentication) {
+        taskService.deleteTask(id, authentication.getName());
         return ResponseEntity.ok("Task deleted successfully!");
+    }
+
+    // SEARCH: GET http://localhost:8080/api/tasks/search?status=PENDING
+    @GetMapping("/search")
+    public List<Task> searchMyTasks(@RequestParam(required = false) String status,
+                                    @RequestParam(required = false) String title,
+                                    Authentication authentication) {
+        return taskService.searchTasksForUser(authentication.getName(), status, title);
     }
 }

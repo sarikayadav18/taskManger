@@ -33,6 +33,10 @@ public class Task {
     private User user;
 
     // --- Constructors ---
+    public Task(){
+
+    }
+
     public Task(String description) {
         this.description = description;
     }
