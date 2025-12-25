@@ -1,12 +1,16 @@
 package com.learn.taskmanager.service;
 
 import com.learn.taskmanager.dto.TaskDTO;
+import com.learn.taskmanager.exception.ResourceNotFoundException;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.model.User;
 import com.learn.taskmanager.repository.TaskRepository;
 import com.learn.taskmanager.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 public class TaskService {
@@ -19,29 +23,35 @@ public class TaskService {
         this.userRepository = userRepository;
     }
 
-    public Task createTask(String username, TaskDTO task) {
+    public Task createTask(String username, TaskDTO taskDto) {
         User user = getUserByUsername(username);
         Task taskEntity = new Task();
         taskEntity.setUser(user);
-        taskEntity.setDescription(task.getDescription());
-        taskEntity.setStatus(task.getStatus());
-        taskEntity.setTitle(task.getTitle());
-
-        //task.setUser(user);
+        taskEntity.setDescription(taskDto.getDescription());
+        taskEntity.setStatus(taskDto.getStatus());
+        taskEntity.setTitle(taskDto.getTitle());
         return taskRepository.save(taskEntity);
     }
 
-    public List<Task> getAllTasksByUsername(String username) {
-        return taskRepository.findByUser(getUserByUsername(username));
+    // UPDATED: Now returns a Page and accepts pagination/sorting parameters
+    public Page<Task> getAllTasksByUsername(String username, int page, int size, String sortBy, String direction) {
+        User user = getUserByUsername(username);
+
+        // Logic: Create a Sort object based on direction string
+        Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+
+        // Logic: Create Pageable object (Spring Page indexes start at 0)
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return taskRepository.findByUser(user, pageable);
     }
 
     public Task updateTask(Long taskId, Task details, String username) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
-        // SECURITY CHECK: Does this task belong to the user?
         if (!task.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Unauthorized: You cannot update this task");
+            throw new SecurityException("Unauthorized: You cannot update this task");
         }
 
         task.setTitle(details.getTitle());
@@ -53,23 +63,28 @@ public class TaskService {
 
     public void deleteTask(Long taskId, String username) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
         if (!task.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Unauthorized: You cannot delete this task");
+            throw new SecurityException("Unauthorized: You cannot delete this task");
         }
         taskRepository.delete(task);
     }
 
-    public List<Task> searchTasksForUser(String username, String status, String title) {
+    // UPDATED: Search now supports pagination
+    public Page<Task> searchTasksForUser(String username, String status, String title, int page, int size, String sortBy, String direction) {
         User user = getUserByUsername(username);
-        if (status != null) return taskRepository.findByUserAndStatus(user, status);
-        if (title != null) return taskRepository.findByUserAndTitleContainingIgnoreCase(user, title);
-        return taskRepository.findByUser(user);
+        Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        if (status != null) return taskRepository.findByUserAndStatus(user, status, pageable);
+        if (title != null) return taskRepository.findByUserAndTitleContainingIgnoreCase(user, title, pageable);
+
+        return taskRepository.findByUser(user, pageable);
     }
 
     private User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     }
 }
