@@ -29,9 +29,17 @@ public class User {
     private String password;
 
     // One User can have Many Tasks
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference // <-- ADD THIS: Tells Jackson to serialize the list of tasks
+    // Inside User.java
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-task") // Unique name for tasks
     private List<Task> tasks;
+
+
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-category") // Unique name for categories
+    private List<Category> categories;
 
     // --- Constructors ---
     public User() {}
@@ -53,4 +61,11 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public List<Task> getTasks() { return tasks; }
     public void setTasks(List<Task> tasks) { this.tasks = tasks; }
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
+    }
 }

@@ -1,9 +1,12 @@
 package com.learn.taskmanager.service;
 
 import com.learn.taskmanager.dto.TaskDTO;
+import com.learn.taskmanager.dto.TaskStatsDTO;
 import com.learn.taskmanager.exception.ResourceNotFoundException;
+import com.learn.taskmanager.model.Category;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.model.User;
+import com.learn.taskmanager.repository.CategoryRepository; // 1. IMPORT ADDED
 import com.learn.taskmanager.repository.TaskRepository;
 import com.learn.taskmanager.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -12,15 +15,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository; // 2. FIELD DECLARED
 
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository) {
+    // 3. CONSTRUCTOR UPDATED TO INJECT CategoryRepository
+    public TaskService(TaskRepository taskRepository,
+                       UserRepository userRepository,
+                       CategoryRepository categoryRepository) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     public Task createTask(String username, TaskDTO taskDto) {
@@ -30,17 +40,25 @@ public class TaskService {
         taskEntity.setDescription(taskDto.getDescription());
         taskEntity.setStatus(taskDto.getStatus());
         taskEntity.setTitle(taskDto.getTitle());
+
+        // Now categoryRepository is available to use
+        if (taskDto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(taskDto.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + taskDto.getCategoryId()));
+
+            if (!category.getUser().getUsername().equals(username)) {
+                throw new SecurityException("You do not own this category");
+            }
+
+            taskEntity.setCategory(category);
+        }
+
         return taskRepository.save(taskEntity);
     }
 
-    // UPDATED: Now returns a Page and accepts pagination/sorting parameters
     public Page<Task> getAllTasksByUsername(String username, int page, int size, String sortBy, String direction) {
         User user = getUserByUsername(username);
-
-        // Logic: Create a Sort object based on direction string
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-
-        // Logic: Create Pageable object (Spring Page indexes start at 0)
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return taskRepository.findByUser(user, pageable);
@@ -58,6 +76,8 @@ public class TaskService {
         task.setDescription(details.getDescription());
         task.setStatus(details.getStatus());
         task.setDueDate(details.getDueDate());
+
+        // Logic check: If you want to update category as well, add it here
         return taskRepository.save(task);
     }
 
@@ -71,11 +91,15 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
-    // UPDATED: Search now supports pagination
-    public Page<Task> searchTasksForUser(String username, String status, String title, int page, int size, String sortBy, String direction) {
+    public Page<Task> searchTasksForUser(String username, String status, String title, Long categoryId, int page, int size, String sortBy, String direction) {
         User user = getUserByUsername(username);
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Filter by Category if provided
+        if (categoryId != null) {
+            return taskRepository.findByUserAndCategoryId(user, categoryId, pageable);
+        }
 
         if (status != null) return taskRepository.findByUserAndStatus(user, status, pageable);
         if (title != null) return taskRepository.findByUserAndTitleContainingIgnoreCase(user, title, pageable);
@@ -86,5 +110,12 @@ public class TaskService {
     private User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+
+
+    }
+
+    public List<TaskStatsDTO> getTaskStats(String username) {
+        return taskRepository.getTaskStatsByUsername(username);
     }
 }
