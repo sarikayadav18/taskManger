@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
@@ -30,4 +31,5 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "WHERE t.user.username = :username " +
             "GROUP BY c.name, t.status")
     List<TaskStatsDTO> getTaskStatsByUsername(@Param("username") String username);
+    List<Task> findByDueDateAndStatusNot(LocalDate dueDate, String status);
 }

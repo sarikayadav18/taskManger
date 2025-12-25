@@ -34,7 +34,7 @@ public class Task {
     private User user;
 
     // --- NEW FIELD: Category Relationship ---
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     @JsonBackReference(value = "category-task") // Prevents infinite loop during JSON serialization
     private Category category;
