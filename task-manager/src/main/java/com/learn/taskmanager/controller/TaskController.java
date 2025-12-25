@@ -64,7 +64,9 @@ public class TaskController {
     public ResponseEntity<Page<Task>> searchMyTasks(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) Long categoryId, // <--- ADDED THIS
+            @RequestParam(required = false) Long categoryId,
+            // <--- ADDED THIS
+            @RequestParam(required = false) String priority,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
@@ -72,6 +74,6 @@ public class TaskController {
             Authentication authentication) {
 
         return ResponseEntity.ok(taskService.searchTasksForUser(
-                authentication.getName(), status, title, categoryId, page, size, sortBy, direction));
+                authentication.getName(), status, title, categoryId,priority, page, size, sortBy, direction));
     }
 }

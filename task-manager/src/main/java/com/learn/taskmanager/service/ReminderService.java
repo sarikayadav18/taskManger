@@ -1,6 +1,7 @@
 package com.learn.taskmanager.service;
 
 import com.learn.taskmanager.model.Notification;
+import com.learn.taskmanager.model.Priority; // Make sure to import this
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.repository.NotificationRepository;
 import com.learn.taskmanager.repository.TaskRepository;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-
 
 @Service
 public class ReminderService {
@@ -23,29 +23,33 @@ public class ReminderService {
         this.notificationRepository = notificationRepository;
     }
 
-    // Runs every day at 8:00 AM
     @Scheduled(cron = "0 0 8 * * ?")
     @Transactional
     public void checkUpcomingDeadlines() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
-        System.out.println("tomorrow: "+ tomorrow );
+
+        // Note: If you changed Status to an Enum, ensure the second parameter matches your Enum type
         List<Task> upcomingTasks = taskRepository.findByDueDateAndStatusNot(tomorrow, "COMPLETED");
 
-        // DEBUG: This will print in your IntelliJ/Eclipse console
         System.out.println("Scheduler found " + upcomingTasks.size() + " tasks due tomorrow.");
 
         for (Task task : upcomingTasks) {
-            String msg = "Reminder: Your task '" + task.getTitle() + "' is due tomorrow!";
+            // Determine prefix based on Priority Enum
+            String prefix = (task.getPriority() == Priority.URGENT || task.getPriority() == Priority.HIGH)
+                    ? "🚨 URGENT REMINDER: "
+                    : "Reminder: ";
 
-            // Check if we already sent this specific notification today
+            String msg = prefix + "Your task '" + task.getTitle() + "' is due tomorrow!";
+
+            // Prevents creating duplicate notifications for the same message/user
             boolean alreadyExists = notificationRepository.existsByMessageAndUser(msg, task.getUser());
 
             if (!alreadyExists) {
                 Notification note = new Notification(msg, task.getUser());
                 notificationRepository.save(note);
-                System.out.println("New notification saved.");
+                System.out.println("Saved: " + msg);
             } else {
-                System.out.println("Notification already exists, skipping...");
+                System.out.println("Notification already exists for: " + task.getTitle());
             }
         }
     }

@@ -4,6 +4,7 @@ import com.learn.taskmanager.dto.TaskDTO;
 import com.learn.taskmanager.dto.TaskStatsDTO;
 import com.learn.taskmanager.exception.ResourceNotFoundException;
 import com.learn.taskmanager.model.Category;
+import com.learn.taskmanager.model.Priority;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.model.User;
 import com.learn.taskmanager.repository.CategoryRepository; // 1. IMPORT ADDED
@@ -37,19 +38,24 @@ public class TaskService {
         User user = getUserByUsername(username);
         Task taskEntity = new Task();
         taskEntity.setUser(user);
+        taskEntity.setTitle(taskDto.getTitle());
         taskEntity.setDescription(taskDto.getDescription());
         taskEntity.setStatus(taskDto.getStatus());
-        taskEntity.setTitle(taskDto.getTitle());
+        taskEntity.setDueDate(taskDto.getDueDate()); // Don't forget the date!
 
-        // Now categoryRepository is available to use
+        // --- PRIORITY LOGIC ---
+        if (taskDto.getPriority() != null) {
+            taskEntity.setPriority(Priority.valueOf(taskDto.getPriority().toUpperCase()));
+        }
+
+        // --- CATEGORY LOGIC ---
         if (taskDto.getCategoryId() != null) {
             Category category = categoryRepository.findById(taskDto.getCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + taskDto.getCategoryId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
             if (!category.getUser().getUsername().equals(username)) {
                 throw new SecurityException("You do not own this category");
             }
-
             taskEntity.setCategory(category);
         }
 
@@ -77,7 +83,11 @@ public class TaskService {
         task.setStatus(details.getStatus());
         task.setDueDate(details.getDueDate());
 
-        // Logic check: If you want to update category as well, add it here
+        // Update Priority if the 'details' object (Task entity) has it
+        if (details.getPriority() != null) {
+            task.setPriority(details.getPriority());
+        }
+
         return taskRepository.save(task);
     }
 
@@ -91,10 +101,14 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
-    public Page<Task> searchTasksForUser(String username, String status, String title, Long categoryId, int page, int size, String sortBy, String direction) {
+    public Page<Task> searchTasksForUser(String username, String status, String title, Long categoryId, String priority, int page, int size, String sortBy, String direction) {
         User user = getUserByUsername(username);
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
+        if (priority != null) {
+            Priority priorityEnum = Priority.valueOf(priority.toUpperCase());
+            return taskRepository.findByUserAndPriority(user, priorityEnum, pageable);
+        }
 
         // Filter by Category if provided
         if (categoryId != null) {

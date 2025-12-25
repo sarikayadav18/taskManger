@@ -1,6 +1,7 @@
 package com.learn.taskmanager.repository;
 
 import com.learn.taskmanager.dto.TaskStatsDTO;
+import com.learn.taskmanager.model.Priority;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.model.User;
 import org.springframework.data.domain.Page; // Added
@@ -32,4 +33,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "GROUP BY c.name, t.status")
     List<TaskStatsDTO> getTaskStatsByUsername(@Param("username") String username);
     List<Task> findByDueDateAndStatusNot(LocalDate dueDate, String status);
+
+    // Inside TaskRepository interface
+    Page<Task> findByUserAndPriority(User user, Priority priority, Pageable pageable);
 }

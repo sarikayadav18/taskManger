@@ -39,6 +39,10 @@ public class Task {
     @JsonBackReference(value = "category-task") // Prevents infinite loop during JSON serialization
     private Category category;
 
+    @Enumerated(EnumType.STRING)
+    private Priority priority = Priority.MEDIUM;
+
+
     // --- Constructors ---
     public Task() {
     }
@@ -74,4 +78,7 @@ public class Task {
     // --- NEW GETTER AND SETTER ---
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
+
+    public Priority getPriority() { return priority; }
+    public void setPriority(Priority priority) { this.priority = priority; }
 }
