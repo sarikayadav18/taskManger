@@ -17,6 +17,8 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private String keyword;
+
 
     public TaskController(TaskService taskService) {
         this.taskService = taskService;
@@ -63,6 +65,7 @@ public class TaskController {
     // URL Example: http://localhost:8080/api/tasks/search?categoryId=1&status=PENDING
     @GetMapping("/search")
     public ResponseEntity<Page<Task>> searchMyTasks(
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) Long categoryId,
@@ -73,9 +76,10 @@ public class TaskController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String direction,
             Authentication authentication) {
+        this.keyword = keyword;
 
         return ResponseEntity.ok(taskService.searchTasksForUser(
-                authentication.getName(), status, title, categoryId,priority, page, size, sortBy, direction));
+                authentication.getName(), status, title, categoryId,priority,keyword, page, size, sortBy, direction));
     }
 
     @GetMapping("/dashboard")

@@ -112,12 +112,20 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
-    public Page<Task> searchTasksForUser(String username, String status, String title, Long categoryId, String priority, int page, int size, String sortBy, String direction) {
+    public Page<Task> searchTasksForUser(String username, String status, String title, Long categoryId, String priority, String keyword, int page, int size, String sortBy, String direction) {
         User user = getUserByUsername(username);
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        if (priority != null) {
+        // --- 1. KEYWORD SEARCH (Must be the very first check) ---
+        // Added .trim() to handle accidental spaces in the URL
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            System.out.println("DEBUG: Executing Keyword Search for: " + keyword); // Check console for this!
+            return taskRepository.searchByKeyword(user, keyword.trim(), pageable);
+        }
+
+        // --- 2. OTHER FILTERS (Only run if keyword is null) ---
+        if (priority != null && !priority.isEmpty()) {
             Priority priorityEnum = Priority.valueOf(priority.toUpperCase());
             return taskRepository.findByUserAndPriority(user, priorityEnum, pageable);
         }
@@ -126,9 +134,15 @@ public class TaskService {
             return taskRepository.findByUserAndCategoryId(user, categoryId, pageable);
         }
 
-        if (status != null) return taskRepository.findByUserAndStatus(user, status, pageable);
-        if (title != null) return taskRepository.findByUserAndTitleContainingIgnoreCase(user, title, pageable);
+        if (status != null && !status.isEmpty()) {
+            return taskRepository.findByUserAndStatus(user, status, pageable);
+        }
 
+        if (title != null && !title.isEmpty()) {
+            return taskRepository.findByUserAndTitleContainingIgnoreCase(user, title, pageable);
+        }
+
+        // --- 3. DEFAULT (If no filters are provided) ---
         return taskRepository.findByUser(user, pageable);
     }
 

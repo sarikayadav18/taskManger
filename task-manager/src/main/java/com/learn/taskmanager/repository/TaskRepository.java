@@ -68,4 +68,9 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "GROUP BY t.completedAt " +
             "ORDER BY t.completedAt ASC")
     List<WeeklyActivityDTO> getWeeklyActivity(@Param("username") String username, @Param("startDate") LocalDate startDate);
+    @Query("SELECT t FROM Task t WHERE t.user = :user AND (" +
+            "LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(t.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Task> searchByKeyword(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
+
 }
