@@ -1,5 +1,6 @@
 package com.learn.taskmanager.controller;
 
+import com.learn.taskmanager.dto.DashboardDTO;
 import com.learn.taskmanager.dto.TaskDTO;
 import com.learn.taskmanager.dto.TaskStatsDTO;
 import com.learn.taskmanager.model.Task;
@@ -75,5 +76,10 @@ public class TaskController {
 
         return ResponseEntity.ok(taskService.searchTasksForUser(
                 authentication.getName(), status, title, categoryId,priority, page, size, sortBy, direction));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardDTO> getDashboard(Authentication auth) {
+        return ResponseEntity.ok(taskService.getDashboardData(auth.getName()));
     }
 }

@@ -2,6 +2,7 @@ package com.learn.taskmanager.service;
 
 import com.learn.taskmanager.model.Notification;
 import com.learn.taskmanager.model.Priority; // Make sure to import this
+import com.learn.taskmanager.model.Status;
 import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.repository.NotificationRepository;
 import com.learn.taskmanager.repository.TaskRepository;
@@ -50,6 +51,29 @@ public class ReminderService {
                 System.out.println("Saved: " + msg);
             } else {
                 System.out.println("Notification already exists for: " + task.getTitle());
+            }
+        }
+    }
+
+    // Add to ReminderService.java
+
+    @Scheduled(cron = "0 0 0 * * ?") // Runs at 12:00 AM every night
+    @Transactional
+    public void processOverdueTasks() {
+        LocalDate today = LocalDate.now();
+        int updatedCount = taskRepository.markExpiredTasksAsOverdue(today);
+
+        if (updatedCount > 0) {
+            System.out.println("Midnight Cleanup: " + updatedCount + " tasks marked as OVERDUE.");
+        }
+        // This logic can be added to the processOverdueTasks method
+        List<Task> overdueTasks = taskRepository.findByStatus(Status.OVERDUE);
+
+        for (Task task : overdueTasks) {
+            String msg = "⚠️ ATTENTION: Your task '" + task.getTitle() + "' is now OVERDUE!";
+
+            if (!notificationRepository.existsByMessageAndUser(msg, task.getUser())) {
+                notificationRepository.save(new Notification(msg, task.getUser()));
             }
         }
     }

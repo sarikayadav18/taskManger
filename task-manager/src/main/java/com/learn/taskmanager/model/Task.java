@@ -28,6 +28,12 @@ public class Task {
     @FutureOrPresent(message = "Due date cannot be in the past")
     private LocalDate dueDate;
 
+
+    @Column(name = "completed_at")
+    private LocalDate completedAt;
+
+// Getters and Setters
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonBackReference(value = "user-task")
@@ -81,4 +87,12 @@ public class Task {
 
     public Priority getPriority() { return priority; }
     public void setPriority(Priority priority) { this.priority = priority; }
+
+    public LocalDate getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDate completedAt) {
+        this.completedAt = completedAt;
+    }
 }
