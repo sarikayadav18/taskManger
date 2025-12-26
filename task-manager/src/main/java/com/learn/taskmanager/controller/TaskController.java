@@ -4,13 +4,17 @@ import com.learn.taskmanager.dto.DashboardDTO;
 import com.learn.taskmanager.dto.TaskDTO;
 import com.learn.taskmanager.dto.TaskStatsDTO;
 import com.learn.taskmanager.model.Task;
+import com.learn.taskmanager.service.EmailService;
 import com.learn.taskmanager.service.TaskService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -18,6 +22,8 @@ public class TaskController {
 
     private final TaskService taskService;
     private String keyword;
+    @Autowired
+    private EmailService emailService;
 
 
     public TaskController(TaskService taskService) {
@@ -85,5 +91,14 @@ public class TaskController {
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardDTO> getDashboard(Authentication auth) {
         return ResponseEntity.ok(taskService.getDashboardData(auth.getName()));
+
+
+    }
+
+    @GetMapping("/test-email")
+    public String testEmail(Principal principal) {
+        // Replace with your actual email to test
+        emailService.sendTaskReminder("your_real_email@example.com", "Test Task", "The email system is working!");
+        return "Email sent! Check your inbox.";
     }
 }
