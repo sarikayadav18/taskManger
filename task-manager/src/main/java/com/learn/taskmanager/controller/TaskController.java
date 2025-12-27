@@ -7,11 +7,16 @@ import com.learn.taskmanager.model.Task;
 import com.learn.taskmanager.service.EmailService;
 import com.learn.taskmanager.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 
@@ -100,5 +105,28 @@ public class TaskController {
         // Replace with your actual email to test
         emailService.sendTaskReminder("your_real_email@example.com", "Test Task", "The email system is working!");
         return "Email sent! Check your inbox.";
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<InputStreamResource> exportToExcel() throws IOException {
+        List<Task> tasks = taskService.getAllTasks();
+        // ADD THESE LOGS:
+        System.out.println("DEBUG: Export requested");
+        System.out.println("DEBUG: Tasks list size is: " + tasks.size());
+
+        if (tasks.isEmpty()) {
+            System.out.println("DEBUG: No tasks found! Check your Repository query.");
+        }
+        // Fetch all tasks
+        ByteArrayInputStream in = taskService.exportTasksToExcel(tasks);
+        System.out.println("Tasks found for export: " + tasks.size());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=tasks.xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(in));
     }
 }

@@ -9,6 +9,8 @@ import com.learn.taskmanager.model.User;
 import com.learn.taskmanager.repository.CategoryRepository;
 import com.learn.taskmanager.repository.TaskRepository;
 import com.learn.taskmanager.repository.UserRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -185,5 +190,59 @@ public class TaskService {
 
     public @Nullable List<TaskStatsDTO> getTaskStats(String name) {
         return List.of();
+    }
+
+    public ByteArrayInputStream exportTasksToExcel(List<Task> tasks) throws IOException {
+        String[] columns = {"ID", "Title", "Description", "Status", "Due Date"};
+
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Tasks");
+            // 1. Header Style (Optional but makes headers bold)
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            CellStyle headerCellStyle = workbook.createCellStyle();
+            headerCellStyle.setFont(headerFont);
+
+            // 1. Create Header Row
+            Row headerRow = sheet.createRow(0);
+            for (int col = 0; col < columns.length; col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(columns[col]);
+            }
+
+            // 2. Fill Data Rows
+            int rowIdx = 1;
+            for (Task task : tasks) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(task.getId());
+                row.createCell(1).setCellValue(task.getTitle() != null ? task.getTitle() : "");
+                row.createCell(2).setCellValue(task.getDescription() != null ? task.getDescription() : "");
+                // Status Null Check
+                String statusValue = (task.getStatus() != null) ? task.getStatus().toString() : "PENDING";
+                row.createCell(3).setCellValue(statusValue);
+
+                // DUE DATE NULL CHECK (This is what caused your 500 error)
+                if (task.getDueDate() != null) {
+                    row.createCell(4).setCellValue(task.getDueDate().toString());
+                } else {
+                    row.createCell(4).setCellValue("No Date");
+                }
+                System.out.println("DEBUG: Writing task ID " + task.getId() + " to Excel row " + (rowIdx - 1));
+            }
+            // IMPORTANT: Auto-size columns so data isn't cut off
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
+    }
+
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
     }
 }
