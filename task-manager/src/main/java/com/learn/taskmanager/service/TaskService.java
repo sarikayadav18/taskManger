@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -192,6 +193,21 @@ public class TaskService {
         return List.of();
     }
 
+
+    public List<Task> getTasksForCurrentUser(String status) {
+        // 1. Get the username of the person logged in (from the JWT/Session)
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        System.out.println("DEBUG: Security check - Fetching tasks for user: " + currentUsername);
+
+        // 2. Fetch only their tasks
+        if (status == null || status.equalsIgnoreCase("ALL")) {
+            return taskRepository.findByUserUsername(currentUsername);
+        } else {
+            return taskRepository.findByUserUsernameAndStatus(currentUsername, status.toUpperCase());
+        }
+    }
+
     public ByteArrayInputStream exportTasksToExcel(List<Task> tasks) throws IOException {
         String[] columns = {"ID", "Title", "Description", "Status", "Due Date"};
 
@@ -244,5 +260,12 @@ public class TaskService {
 
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
+    }
+
+    public List<Task> getTasksByStatus(String status) {
+        if (status == null || status.isEmpty() || status.equalsIgnoreCase("ALL")) {
+            return taskRepository.findAll();
+        }
+        return taskRepository.findByStatus(status.toUpperCase());
     }
 }

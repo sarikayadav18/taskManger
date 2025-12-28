@@ -73,4 +73,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "LOWER(COALESCE(t.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Task> searchByKeyword(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
 
+
+        // This will generate the SQL: SELECT * FROM tasks WHERE status = ?
+        List<Task> findByStatus(String status);
+    // Finds tasks belonging to a specific username
+    List<Task> findByUserUsername(String username);
+
+    // If you want to combine filtering from before:
+    List<Task> findByUserUsernameAndStatus(String username, String status);
+
+
 }

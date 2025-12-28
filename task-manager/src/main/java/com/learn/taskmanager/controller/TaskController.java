@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
@@ -108,21 +109,21 @@ public class TaskController {
     }
 
     @GetMapping("/export")
-    public ResponseEntity<InputStreamResource> exportToExcel() throws IOException {
-        List<Task> tasks = taskService.getAllTasks();
-        // ADD THESE LOGS:
-        System.out.println("DEBUG: Export requested");
-        System.out.println("DEBUG: Tasks list size is: " + tasks.size());
+    public ResponseEntity<InputStreamResource> exportToExcel(@RequestParam(required = false) String status) throws IOException {
+        // This now only returns tasks belonging to the logged-in user
+        List<Task> tasks = taskService.getTasksForCurrentUser(status);
 
         if (tasks.isEmpty()) {
-            System.out.println("DEBUG: No tasks found! Check your Repository query.");
+            // You might want to handle this so they don't get a 500 or empty file
+            System.out.println("DEBUG: No tasks found for this specific user.");
         }
-        // Fetch all tasks
+
         ByteArrayInputStream in = taskService.exportTasksToExcel(tasks);
-        System.out.println("Tasks found for export: " + tasks.size());
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String filename = username + "_tasks_" + System.currentTimeMillis() + ".xlsx";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=tasks.xlsx");
+        headers.add("Content-Disposition", "attachment; filename=" + filename);
 
         return ResponseEntity.ok()
                 .headers(headers)
