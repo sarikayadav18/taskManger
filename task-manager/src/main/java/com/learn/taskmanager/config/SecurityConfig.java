@@ -26,6 +26,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configure(http)) // Add this line to enable CORS support in Security
+
+
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for REST APIs
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 3. No sessions (JWT)
                 .authorizeHttpRequests(auth -> auth
